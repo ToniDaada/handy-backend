@@ -9,12 +9,12 @@ export function listServices(req: Request, res: Response): void {
   const limitValue = req.query.limit;
 
   if (search !== undefined && typeof search !== "string") {
-    res.status(400).json({ message: "search must be one text value." });
+    res.status(400).json({ message: "search must be at least one text value." });
     return;
   }
 
   if (category !== undefined && (typeof category !== "string" || category.trim() === "")) {
-    res.status(400).json({ message: "category must be one non-empty text value." });
+    res.status(400).json({ message: "category must be at least one non-empty text value." });
     return;
   }
 

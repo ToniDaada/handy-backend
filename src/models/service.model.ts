@@ -56,9 +56,7 @@ export function addService(details: ServiceDetails): Service {
 export function editService(id: string, changes: ServiceChanges): Service | undefined {
   const service = getServiceById(id);
 
-  if (!service) {
-    return undefined;
-  }
+  if (!service) return;
 
   Object.assign(service, changes);
 
