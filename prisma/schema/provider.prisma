@@ -1,0 +1,27 @@
+model ProviderProfile {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio               String?
+  category          String
+  city              String
+  hourly_rate_minor Int?
+  currency          String    @default("NGN")
+  avatar_url        String?
+  id_document_url   String?
+  services          Service[]
+
+  @@index([category, city])
+}
+
+model Service {
+  id               String          @id @default(uuid())
+  providerId       String
+  provider         ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  price_minor      Int
+  duration_minutes Int
+  is_active        Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+}
