@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import serviceRoutes from "./service.routes.js";
+import providerRoutes from "./provider.routes.js";
 
 const router = Router();
 
@@ -8,6 +8,6 @@ router.get("/api", (_req, res) => {
   res.json({ message: "SERVERS ARE LIVE!!!" });
 });
 
-router.use("/api/services", serviceRoutes);
+router.use("/api/providers", providerRoutes);
 
 export default router;

@@ -1,78 +1,69 @@
-import { randomUUID } from "node:crypto";
+import { NotFoundError } from "../helper/errors.js";
+import { prisma } from "../helper/prisma.js";
+import type { PaginationQuery } from "../interface.js";
+import type { CreateServiceInput, UpdateServiceInput } from "../utils/types/serviceValidatorSchema.js";
 
-export interface Service {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  price_minor: number;
-  duration_minutes: number;
-  createdAt: string;
+async function ensureProviderExists(providerId: string): Promise<void> {
+  const provider = await prisma.providerProfile.findUnique({
+    where: { id: providerId },
+    select: { id: true },
+  });
+
+  if (!provider) {
+    throw new NotFoundError("Provider not found");
+  }
 }
 
-export interface ServiceDetails {
-  title: string;
-  description: string;
-  category: string;
-  price_minor: number;
-  duration_minutes: number;
+export async function getProviderServices(providerId: string, pagination: PaginationQuery) {
+  await ensureProviderExists(providerId);
+
+  const where = { providerId };
+  const [services, total] = await Promise.all([
+    prisma.service.findMany({
+      where,
+      skip: (pagination.page - 1) * pagination.limit,
+      take: pagination.limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.service.count({ where }),
+  ]);
+
+  return { services, total };
 }
 
-export interface ServiceChanges {
-  title?: string;
-  description?: string;
-  category?: string;
-  price_minor?: number;
-  duration_minutes?: number;
+export async function createProviderService(providerId: string, data: CreateServiceInput) {
+  await ensureProviderExists(providerId);
+
+  return prisma.service.create({
+    data: { ...data, providerId },
+  });
 }
 
-// temporary database.
-const services: Service[] = [];
-
-export function getAllServices(): Service[] {
-  return [...services];
-}
-
-export function getServiceById(id: string): Service | undefined {
-  return services.find(service => service.id === id);
-}
-
-export function addService(details: ServiceDetails): Service {
-  const service: Service = {
-    id: randomUUID(),
-    title: details.title,
-    description: details.description,
-    category: details.category,
-    price_minor: details.price_minor,
-    duration_minutes: details.duration_minutes,
-    createdAt: new Date().toISOString(),
-  };
-
-  services.push(service);
-
-  return service;
-}
-
-export function editService(id: string, changes: ServiceChanges): Service | undefined {
-  const service = getServiceById(id);
+export async function updateProviderService(providerId: string, serviceId: string, data: UpdateServiceInput) {
+  const service = await prisma.service.findFirst({
+    where: { id: serviceId, providerId },
+    select: { id: true },
+  });
 
   if (!service) {
-    return undefined;
+    throw new NotFoundError("Service not found for this provider");
   }
 
-  Object.assign(service, changes);
-
-  return service;
+  return prisma.service.update({
+    where: { id: serviceId },
+    data,
+  });
 }
 
-export function removeService(id: string): Service | undefined {
-  const serviceIndex = services.findIndex(service => service.id === id);
+export async function deleteProviderService(providerId: string, serviceId: string) {
+  const service = await prisma.service.findFirst({
+    where: { id: serviceId, providerId },
+    select: { id: true },
+  });
 
-  if (serviceIndex === -1) {
-    return undefined;
+  if (!service) {
+    throw new NotFoundError("Service not found for this provider");
   }
 
-  const [deletedService] = services.splice(serviceIndex, 1);
-
-  return deletedService;
+  return prisma.service.delete({ where: { id: serviceId } });
 }
